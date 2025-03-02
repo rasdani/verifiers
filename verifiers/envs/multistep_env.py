@@ -27,8 +27,10 @@ class MultiStepEnv(Environment):
         self.sampling_args.update(sampling_args)
         self.env_mask = 0 if mask_env_response else 1
 
-    @abstractmethod
-    def get_dataset(self, **kwargs: Any) -> Dataset:
+    def get_dataset(self, **kwargs: Any) -> Dataset | None:
+        pass
+
+    def get_eval_dataset(self, **kwargs: Any) -> Dataset | None:
         pass
 
     @abstractmethod
@@ -116,6 +118,14 @@ class MultiStepEnv(Environment):
         }
         return output
 
+    def eval(self, 
+             model: Union[str, LLM],
+             batch_size: int = 10, **kwargs: Any):
+        if self.eval_dataset is None:
+            self.eval_dataset = self.get_eval_dataset()
+
+        rewards = []
+        return self.eval_dataset, rewards
     
 
     

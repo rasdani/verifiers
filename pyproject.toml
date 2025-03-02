@@ -8,8 +8,9 @@ description = "Verifiers for reinforcement learning with LLMs"
 license = {text = "MIT"}
 requires-python = ">=3.11"
 dependencies = [
+    "torch",
     "setuptools",
-    "deepspeed",
+    "deepspeed==0.16.3",
     "accelerate",
     "peft",
     "wandb",
@@ -17,7 +18,7 @@ dependencies = [
     "duckduckgo-search",
     "trl",
     "liger-kernel>=0.5.2",
-    "vllm==0.7.3",
+    "vllm>=0.7.3",
 ]
 
 [tool.setuptools]

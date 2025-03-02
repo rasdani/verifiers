@@ -6,14 +6,18 @@ This repository contains a set of tools for reinforcement learning with LLMs in 
 
 PyPI [coming soon](https://pypi.org/project/verifiers/) once a couple more features are added, just clone it for now and run:
 ```
-uv pip install -e .
+git clone https://github.com/willccbb/verifiers.git
+cd verifiers
+uv sync
 uv pip install flash-attn --no-build-isolation
+source .venv/bin/activate
+accelerate launch --config-file configs/zero3.yaml --num-processes [N-1] verifiers/examples/gsm8k_calculator.py
 ```
+
+
 Ensure your `wandb` and `huggingface-cli` logins are set up (or set `report_to=None` in `training_args`).
 
-Tested with Python 3.11 and this [image](https://hub.docker.com/layers/pytorch/pytorch/2.5.1-cuda12.1-cudnn9-devel/images/sha256-e8e63dd7baca894ba11fe1ba48a52a550793c8974f89b533d697784dd20a4dc0). If you encounter version issues, please confirm that you are able to run basic TRL training in your environment before opening an issue. `flash-attn` and `liger-kernel` are used for performance reasons. Recommended usage is via `accelerate` with DeepSpeed ZeRO 3 ([example config](https://github.com/huggingface/trl/blob/main/examples/accelerate_configs/deepspeed_zero3.yaml)) but `torchrun` works in my tests as well.
-
-You can also use this [gist](https://gist.github.com/kalomaze/37c70e022cb1e9428ebb1ee7a4b52275) from [@kalomaze])https://github.com/kalomaze) to quickly install and run an example script (maybe outdated now idk). 
+Tested with Python 3.11 and this [image](https://hub.docker.com/layers/pytorch/pytorch/2.5.1-cuda12.1-cudnn9-devel/images/sha256-e8e63dd7baca894ba11fe1ba48a52a550793c8974f89b533d697784dd20a4dc0). If you encounter version issues, please confirm that you are able to run basic TRL training in your environment before opening an issue. `flash-attn` and `liger-kernel` are used for performance reasons. Recommended usage is via `accelerate` with DeepSpeed ZeRO 3 ([example config](https://github.com/huggingface/trl/blob/main/examples/accelerate_configs/deepspeed_zero3.yaml)) but `torchrun` works in my tests as well. You should really be using `uv` (`curl -LsSf https://astral.sh/uv/install.sh | sh`). I don't have the bandwidth to help debug your version issues if you're using `pip`, sorry.
 
 ## Usage
 

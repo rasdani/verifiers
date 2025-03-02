@@ -13,13 +13,11 @@ from transformers import (
 )
 from transformers.utils import is_peft_available
 from trl import GRPOTrainer, GRPOConfig
-from trl.data_utils import is_conversational, apply_chat_template, maybe_apply_chat_template
-# from trl.extras.profiling import profiling_decorator
+from trl.data_utils import apply_chat_template, maybe_apply_chat_template
 from trl.import_utils import is_rich_available
 from trl.trainer.utils import pad
 
 from verifiers.envs.environment import Environment
-from verifiers.imports import SamplingParams
 from verifiers.utils.logging_utils import print_prompt_completions_sample
 
 if is_peft_available():
@@ -125,7 +123,7 @@ class GRPOEnvTrainer(GRPOTrainer):
         
         logits_to_keep = completion_ids.size(1)
 
-        with torch.inference_mode():
+        with torch.no_grad():
             # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip it's
             # computation here, and use per_token_logps.detach() instead.
             if self.num_iterations > 1:
@@ -151,10 +149,6 @@ class GRPOEnvTrainer(GRPOTrainer):
         completions = completion_messages
         rewards_per_func = torch.zeros(len(prompts), len(self.reward_funcs), device=device)
         for i, reward_func in enumerate(self.reward_funcs):
-            # Deleted the code for nn.Module reward functions. if you really want it, you can add it back from TRL or open a Github issue.
-            # Recommendation is to host neural reward models with vLLM in a separate process.
-            assert not isinstance(reward_func, nn.Module)
-
             # Repeat all input columns (but "prompt" and "completion") to match the number of generations
             keys = [key for key in inputs[0] if key not in ["prompt", "completion"]] # type: ignore
             reward_kwargs = {key: [example[key] for example in inputs] for key in keys} # type: ignore
@@ -202,12 +196,11 @@ class GRPOEnvTrainer(GRPOTrainer):
             rewards_to_log = rewards.tolist()
 
             if self.accelerator.is_main_process:
-
                 if is_rich_available():
                     print_prompt_completions_sample(
                         [str(prompts_to_log[0][-1]["content"])],
                         [completions_to_log[0]],
-                        [rewards_to_log[0]], 
+                        [rewards_to_log[0]],
                         self.state.global_step,
                     )
                 if self.args.report_to and "wandb" in self.args.report_to and wandb.run is not None: # type: ignore

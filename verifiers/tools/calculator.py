@@ -1,4 +1,4 @@
-def calculate(expression: str) -> str:
+def calculator(expression: str) -> str:
     """Evaluates a single line of Python math expression. No imports or variables allowed.
     
     Args:

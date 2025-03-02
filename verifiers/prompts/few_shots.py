@@ -220,7 +220,7 @@ CALCULATOR_FEW_SHOT = [
             'role': 'assistant',
             'content': tool_parser.format(
                 reasoning="Let's solve this step by step:\n1. First, calculate how many marbles Janet has (3 times Tom's)",
-                tool='{"name": "calculate", "args": {"expression": "3 * 12"}}'
+                tool='{"name": "calculator", "args": {"expression": "3 * 12"}}'
             )
         },
         {
@@ -231,7 +231,7 @@ CALCULATOR_FEW_SHOT = [
             'role': 'assistant',
             'content': tool_parser.format(
                 reasoning="2. Now we know:\n   - Tom has 12 marbles\n   - Janet has 36 marbles\n   Let's add them together",
-                tool='{"name": "calculate", "args": {"expression": "36 + 12"}}'
+                tool='{"name": "calculator", "args": {"expression": "36 + 12"}}'
             )
         },
         {
@@ -255,7 +255,7 @@ CALCULATOR_FEW_SHOT = [
             'role': 'assistant',
             'content': tool_parser.format(
                 reasoning="To find how many complete batches Samantha can make, I need to divide the total amount of flour by the amount needed per batch.",
-                tool='{"name": "calculate", "args": {"expression": "10 / 2.5"}}'
+                tool='{"name": "calculator", "args": {"expression": "10 / 2.5"}}'
             )
         },
         {

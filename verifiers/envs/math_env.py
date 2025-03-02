@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Tuple
-
+from datasets import Dataset
 from trl.trainer.grpo_trainer import RewardFunc
 
 from verifiers.envs.simple_env import SimpleEnv
@@ -27,18 +27,20 @@ class MathEnv(SimpleEnv):
         self.eval_dataset = None
         self.rubric = MathRubric()
     
-    def get_dataset(self, **kwargs: Any):
+    def get_dataset(self, **kwargs: Any) -> Dataset:
         return self.dataset
     
-    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
-        return self.rubric.get_reward_funcs()
-
-    def eval(self, batch_size: int = 10, **kwargs: Any):
-        # TODO: Implement evaluation step
+    def get_eval_dataset(self, n: int = -1, **kwargs: Any) -> Dataset | None:
         if self.eval_dataset is None:
             self.eval_dataset = preprocess_dataset(
                 dataset_name=self.dataset_name,
                 split="test",
                 system_prompt=self.system_prompt,
                 few_shot=self.few_shot
-            )    
+            )
+        if n > 0:
+            return self.eval_dataset.shuffle().select(range(n)) # type: ignore
+        return self.eval_dataset 
+    
+    def get_rubric(self, **kwargs: Any) -> List[RewardFunc]:
+        return self.rubric.get_reward_funcs()

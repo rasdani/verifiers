@@ -1,9 +1,11 @@
+from abc import abstractmethod
 import json
 import random
 from typing import List, Dict, Sequence, Any, Union
 
-from ..imports import LLM, SamplingParams  # type: ignore
+from datasets import Dataset
 
+from ..imports import LLM, SamplingParams  # type: ignore
 from verifiers.envs.environment import Environment
 
 
@@ -22,6 +24,12 @@ class SimpleEnv(Environment):
             "n": 1
         }
         self.sampling_args.update(sampling_args)
+
+    def get_dataset(self, **kwargs: Any) -> Dataset | None:
+        pass
+
+    def get_eval_dataset(self, **kwargs: Any) -> Dataset | None:
+        pass
 
     def format_prompt(self, prompt: str, fewshot_prob: float = 1.0) -> List[Dict[str, str]]:
         messages = []

@@ -15,7 +15,11 @@ class Environment(ABC):
         self.tokenizer = None
 
     @abstractmethod
-    def get_dataset(self, **kwargs: Any) -> Dataset:
+    def get_dataset(self, **kwargs: Any) -> Dataset | None:
+        pass
+
+    @abstractmethod
+    def get_eval_dataset(self, **kwargs: Any) -> Dataset | None:
         pass
 
     @abstractmethod

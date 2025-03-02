@@ -1,4 +1,4 @@
-from .calculator import calculate
+from .calculator import calculator
 from .search import search
 
-__all__ = ["calculate", "search"] 
+__all__ = ["calculator", "search"] 

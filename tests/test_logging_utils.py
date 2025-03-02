@@ -49,7 +49,7 @@ def test_list_of_messages():
     rewards = [0.87]
     step = 2
     
-    print_prompt_completions_sample(prompts, completions, rewards, step)
+    print_prompt_completions_sample(prompts, completions, rewards, step) # type: ignore
 
 def test_string_fallback():
     """Test the fallback case with string completions."""
