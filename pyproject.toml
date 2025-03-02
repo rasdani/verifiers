@@ -15,7 +15,10 @@ dependencies = [
     "wandb",
     "rich",
     "duckduckgo-search",
-    "trl @ git+https://github.com/huggingface/trl.git",
+    "trl",
     "liger-kernel>=0.5.2",
     "vllm==0.7.3",
 ]
+
+[tool.setuptools]
+packages = ["verifiers", "configs"]

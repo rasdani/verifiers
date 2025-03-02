@@ -14,7 +14,7 @@ from transformers import (
 from transformers.utils import is_peft_available
 from trl import GRPOTrainer, GRPOConfig
 from trl.data_utils import is_conversational, apply_chat_template, maybe_apply_chat_template
-from trl.extras.profiling import profiling_decorator
+# from trl.extras.profiling import profiling_decorator
 from trl.import_utils import is_rich_available
 from trl.trainer.utils import pad
 
