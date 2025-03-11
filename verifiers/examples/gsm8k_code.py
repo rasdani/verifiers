@@ -24,7 +24,7 @@ training_args.gradient_accumulation_steps = 4
 # steps per global batch (1 on-policy, 1 off-policy)
 training_args.num_iterations = 2
 # no ref model
-training_args.beta = 0.0
+training_args.beta = 0.04
 # evals
 training_args.eval_strategy = "steps"
 training_args.eval_steps = 100

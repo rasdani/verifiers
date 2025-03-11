@@ -23,20 +23,22 @@ def get_model(model_name: str, model_kwargs: Union[Dict[str, Any], None] = None)
         return AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     
 def get_tokenizer(model_name: str) -> Any:
+    tokenizer = None
     if "Instruct" in model_name:
-        return AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
     else:
         try:
-            return AutoTokenizer.from_pretrained(model_name + "-Instruct")
+            tokenizer = AutoTokenizer.from_pretrained(model_name + "-Instruct")
         except Exception:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
-            # check if tokenizer has chat_template attribute
-            if hasattr(tokenizer, "chat_template"):
-                return tokenizer
-            else:
-                raise ValueError(f"Tokenizer for model {model_name} does not have chat_template attribute, \
-                                  and could not find a tokenizer with the same name as the model with suffix \
-                                 '-Instruct'. Please provide a tokenizer with the chat_template attribute.")
+    if not hasattr(tokenizer, "pad_token"):
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    if not hasattr(tokenizer, "chat_template"):
+        raise ValueError(f"Tokenizer for model {model_name} does not have chat_template attribute, \
+                            and could not find a tokenizer with the same name as the model with suffix \
+                            '-Instruct'. Please provide a tokenizer with the chat_template attribute.")
+    return tokenizer
             
 def get_model_and_tokenizer(model_name: str, model_kwargs: Union[Dict[str, Any], None] = None) -> Tuple[Any, Any]:
     model = get_model(model_name, model_kwargs)

@@ -1,18 +1,20 @@
 from trl import GRPOConfig
+from typing import List, Optional
 
 def get_default_grpo_config(run_name: str,
-                            num_gpus: int = 1) -> GRPOConfig:
+                            num_gpus: int = 1,
+                            reward_weights: Optional[List[float]] = None) -> GRPOConfig:
     return GRPOConfig(
         output_dir=f"outputs/{run_name}",
         run_name=run_name,
         learning_rate=1e-6,
         lr_scheduler_type="constant_with_warmup",
-        warmup_steps=10,
+        warmup_steps=20,
         num_train_epochs=1,
         bf16=True,
         adam_beta1=0.9,
         adam_beta2=0.99,
-        max_grad_norm=0.01,
+        max_grad_norm=0.1,
         num_iterations=1,
         beta=0.04,
         max_prompt_length=1024,
@@ -32,6 +34,7 @@ def get_default_grpo_config(run_name: str,
         log_on_each_node=True,
         log_completions=True,
         report_to="wandb",
+        reward_weights=reward_weights
     )
 
 

@@ -15,6 +15,7 @@ class Rubric(ABC):
         for key, value in kwargs.items():
             setattr(self, key, value)
         self.reward_funcs = []
+        self.reward_weights = None
 
     def get_assistant_messages(self, trajectory: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """Helper function to extract assistant messages from a trajectory."""
@@ -44,5 +45,5 @@ class Rubric(ABC):
     def get_reward_funcs(self) -> List[RewardFunc]:
         return self.reward_funcs
 
-
-
+    def get_reward_weights(self) -> List[float] | None:
+        return self.reward_weights

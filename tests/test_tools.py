@@ -7,7 +7,7 @@ Run with: python test_tools.py
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from verifiers.tools.calculator import calculate  # type: ignore
+from verifiers.tools.calculator import calculator  # type: ignore
 from verifiers.tools.search import search  # type: ignore
 
 def main():
@@ -15,22 +15,22 @@ def main():
     print("\nTesting calculator...")
     
     # Basic operations
-    assert calculate("2 + 2") == "4", "Basic addition failed"
-    assert calculate("3 * (17 + 4)") == "63", "Order of operations failed"
-    assert calculate("100 / 5") == "20.0", "Division failed"
+    assert calculator("2 + 2") == "4", "Basic addition failed"
+    assert calculator("3 * (17 + 4)") == "63", "Order of operations failed"
+    assert calculator("100 / 5") == "20.0", "Division failed"
     print("✓ Basic operations")
     
     # Edge cases
-    assert calculate("0 + 0") == "0", "Zero handling failed"
-    assert calculate("1.5 * 2") == "3.0", "Decimal handling failed"
+    assert calculator("0 + 0") == "0", "Zero handling failed"
+    assert calculator("1.5 * 2") == "3.0", "Decimal handling failed"
     print("✓ Edge cases")
     
     # Error cases
-    assert calculate("").startswith("Error"), "Empty input handling failed"
-    assert calculate("import os").startswith("Error"), "Import blocking failed"
-    assert calculate("x = 1").startswith("Error"), "Variable assignment blocking failed"
-    assert calculate("print('hello')").startswith("Error"), "Function call blocking failed"
-    assert calculate("2 + 2; rm -rf /").startswith("Error"), "Command injection blocking failed"
+    assert calculator("").startswith("Error"), "Empty input handling failed"
+    assert calculator("import os").startswith("Error"), "Import blocking failed"
+    assert calculator("x = 1").startswith("Error"), "Variable assignment blocking failed"
+    assert calculator("print('hello')").startswith("Error"), "Function call blocking failed"
+    assert calculator("2 + 2; rm -rf /").startswith("Error"), "Command injection blocking failed"
     print("✓ Error cases")
     
     # Test search

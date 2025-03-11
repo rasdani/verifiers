@@ -5,6 +5,7 @@ env/
 .env
 .env.local
 uv.lock
+CLAUDE.md
 
 # artifacts
 dist/
@@ -29,3 +30,4 @@ logs/
 
 # WIPs
 wip/
+notebooks/

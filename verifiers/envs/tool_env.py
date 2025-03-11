@@ -165,8 +165,8 @@ class ToolEnv(MultiStepEnv):
         except Exception:
             return False
 
-    def execute_tool(self, tool_json: str, **kwargs: Any) -> str:
-        """Execute a tool based on JSON command."""
+    def call_tool(self, tool_json: str, **kwargs: Any) -> str:
+        """Call a tool based on JSON command."""
         try:
             command = json.loads(tool_json)
             if not isinstance(command, dict):
@@ -182,7 +182,7 @@ class ToolEnv(MultiStepEnv):
             tool_func = self.tools[tool_name]
             tool_args = command.get("args", {})
             
-            # Execute the tool function with arguments
+            # Call the tool function with arguments
             result = tool_func(**tool_args)
             return str(result)
         except json.JSONDecodeError:
@@ -195,7 +195,7 @@ class ToolEnv(MultiStepEnv):
             parsed = self.llm_parser.parse(messages[-1]["content"])
             # Check if we got a valid tool field (not just None from failed parsing)
             if hasattr(parsed, 'tool') and parsed.tool is not None:
-                result = self.execute_tool(parsed.tool)
+                result = self.call_tool(parsed.tool)
                 if len(result.strip()) > 0:
                     return {"role": "user", "content": self.env_parser.format(result=result)}
                 else:
