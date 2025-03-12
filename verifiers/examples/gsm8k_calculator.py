@@ -2,7 +2,8 @@ import verifiers as vf
 from verifiers.tools import calculator
 from verifiers.prompts import CALCULATOR_FEW_SHOT
 
-model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+# model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+model_name = "Qwen/Qwen2.5-0.5B-Instruct"
 model, tokenizer = vf.get_model_and_tokenizer(model_name)
 
 # Initialize tool environment for GSM8K
@@ -20,18 +21,23 @@ rubric = vf_env.get_rubric()
 run_name = "gsm8k-calc_" + model_name.split("/")[-1].lower()
 training_args = vf.get_default_grpo_config(
     run_name=run_name,
-    num_gpus=8
+    # num_gpus=8
+    num_gpus=2
+    # num_gpus=1
 )
 # rollouts per prompt
-training_args.num_generations = 7
+# training_args.num_generations = 7
+training_args.num_generations = 4
 # minibatch size per GPU ( bs 6 * 7 gpus / 7 rollouts -> 6 prompts per batch)
-training_args.per_device_train_batch_size = 6
+training_args.per_device_train_batch_size = 4
 # batches to accumulate (6 prompts * 4 -> 32 prompts per global batch)
 training_args.gradient_accumulation_steps = 4
 # steps per global batch (1 on-policy, 1 off-policy)
 training_args.num_iterations = 2
 # no ref model
 training_args.beta = 0.04
+training_args.max_steps = 500
+training_args.do_eval = True
 # evals
 #training_args.eval_strategy = "steps"
 ##training_args.eval_on_start = True
@@ -45,7 +51,7 @@ trainer = vf.GRPOEnvTrainer(
     env=vf_env,
     args=training_args,
     train_dataset=dataset,
-    #eval_dataset=eval_dataset,
+    eval_dataset=eval_dataset,
 )
 
-trainer.train() 
+trainer.train()

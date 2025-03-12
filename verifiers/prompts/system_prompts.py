@@ -9,6 +9,16 @@ Respond in the following format, using careful step-by-step reasoning.
 </answer>
 """
 
+COUNTDOWN_PROMPT = """\
+Using the numbers {numbers}, create an equation that equals {target}. You can use basic arithmetic operations (+, -, *, /) and each number can only be used once.
+Your final answer should only contain the equation, no equals sign.
+
+Respond in the following format.
+
+<think> ... </think>
+<answer> ... </answer>
+"""
+
 CODE_PROMPT = """\
 Given a math problem, use step-by-step reasoning and code execution to solve the problem. 
 

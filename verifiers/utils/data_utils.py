@@ -2,7 +2,9 @@ import random
 import json
 from typing import List, Dict
 
-from datasets import Dataset, load_dataset # type: ignore
+from datasets import Dataset, load_dataset
+
+from verifiers.prompts.system_prompts import COUNTDOWN_PROMPT # type: ignore
 
 def extract_boxed_answer(text: str) -> str | None:
     def find_matching_brace(s: str, start: int) -> int:
@@ -82,6 +84,13 @@ def preprocess_dataset(dataset_name: str = "gsm8k",
         dataset = dataset.map(lambda x: {
             "prompt": format_prompt(format_question(x), str(system_prompt) + "\n\nReturn only the letter of the correct answer.", few_shot, fewshot_prob),
             "answer": x["answerKey"]
+        })
+        return dataset
+    elif dataset_name == "countdown":
+        dataset: Dataset = load_dataset("rasdani/countdown")[split] # type: ignore
+        dataset = dataset.map(lambda x: {
+            "prompt": [{"role": "user", "content": COUNTDOWN_PROMPT.format(numbers=x["nums"], target=x["target"])}],
+            "answer": {"target": x["target"], "numbers": x["nums"]}
         })
         return dataset
     else:

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  verifiers:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/workspace/verifiers
+      - ~/.cache/huggingface/:/root/.cache/huggingface/
+    environment:
+      # Set environment variables for authentication
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+    # Keep the container running
+    command: tail -f /dev/null
+    # Ensure container restarts if it crashes
+    restart: unless-stopped
+    # Allow larger shared memory for CUDA operations
+    shm_size: '16gb'
+    # Increase ulimits for better performance
+    ulimits:
+      memlock: -1
+      stack: 67108864
