@@ -1,106 +1,30 @@
 import inspect
 import json
-from typing import List, Dict, Any, Callable
+from typing import List, Dict, Any, Callable, Optional, Type
 
 from datasets import Dataset
 
 from verifiers import RewardFunc
 from verifiers.envs.multiturn_env import MultiTurnEnv
-from verifiers.parsers import XMLParser
+from verifiers.parsers.smola_parser import SmolaParser
 from verifiers.prompts import DEFAULT_TOOL_PROMPT_TEMPLATE
-from verifiers.rubrics import ToolRubric
+from verifiers.rubrics.smola_tool_rubric import SmolaToolRubric
 
-def infer_schema_from_function(func: Callable) -> Dict[str, Any]:
-    """Infers a tool schema from a function's signature and docstring."""
-    sig = inspect.signature(func)
-    doc = inspect.getdoc(func) or ""
-    
-    # Parse docstring sections
-    doc_parts = doc.split("\n\n")
-    description = doc_parts[0].strip()
-    
-    # Extract examples if present
-    examples = []
-    return_description = ""
-    for part in doc_parts:
-        if part.startswith("Examples:"):
-            examples = [line.strip() for line in part.split("\n")[1:] if line.strip()]
-        elif part.startswith("Returns:"):
-            return_description = part.split("\n")[1].strip()
-
-    return_type = str(sig.return_annotation.__name__ if sig.return_annotation != inspect.Parameter.empty else "any")
-
-    print(f"return_description: {return_description} ({return_type})")
-    # Build args schema
-    args = {}
-    for name, param in sig.parameters.items():
-        param_doc = ""
-        for part in doc_parts:
-            if part.strip().startswith("Args:"):
-                for line in part.split("\n")[1:]:
-                    if line.strip().startswith(f"{name}:"):
-                        param_doc = line.strip()[len(name)+1:].strip()
-        
-        args[name] = {
-            "type": str(param.annotation.__name__ if param.annotation != inspect.Parameter.empty else "any"),
-            "description": param_doc,
-        }
-        if param.default != inspect.Parameter.empty:
-            args[name]["default"] = param.default
-    
-    return {
-        "name": func.__name__,
-        "description": description,
-        "args": args,
-        "returns": return_description + f" ({return_type})",
-        "examples": examples
-    }
-
-def format_tool_descriptions(schemas: List[Dict[str, Any]]) -> str:
-    """Formats tool schemas into a user-friendly description string."""
-    descriptions = []
-    for schema in schemas:
-        desc = [f"{schema['name']}: {schema['description']}"]
-        
-        desc.append("\nArguments:")
-        for arg_name, arg_info in schema['args'].items():
-            default = f" (default: {arg_info['default']})" if 'default' in arg_info else ""
-            desc.append(f"  - {arg_name}: {arg_info['description']}{default}")
-        
-        if schema['examples']:
-            desc.append("\nExamples:")
-            for example in schema['examples']:
-                desc.append(f"  {example}")
-        
-        if schema['returns']:
-            desc.append(f"\nReturns: {schema['returns']}")
-        
-        descriptions.append("\n".join(desc))
-    
-    return "\n\n".join(descriptions)
-
-class ToolEnv(MultiTurnEnv):
+class SmolaToolEnv(MultiTurnEnv):
     def __init__(self,
                  dataset: Dataset | None = None,
                  eval_dataset: Dataset | None = None,
-                 tools: List[Callable] = [],
+                 tools: List[Any] = [],
                  system_prompt: str = DEFAULT_TOOL_PROMPT_TEMPLATE,
                  few_shot: List[Dict[str, str]] = [],
-                 llm_fields: List[str | tuple[str, str]] = ["reasoning", ("tool", "answer")],
-                 env_fields: List[str | tuple[str, str]] = ["result"],
                  sampling_args={
                      "stop": ["</tool>\n", "</answer>\n"],
-                     #"stop": [],
                      "include_stop_str_in_output": True
                  },
                  mask_env_response: bool = True,
                  max_steps: int = 10, **kwargs):
-        # Infer schemas from tool functions
-        self.tool_schemas = [infer_schema_from_function(tool) for tool in tools]
-        self.tools = {tool.__name__: tool for tool in tools}
-        
         # Format the system prompt with tool descriptions
-        tool_descriptions = format_tool_descriptions(self.tool_schemas)
+        tool_descriptions = self._format_tool_descriptions(tools)
         formatted_prompt = system_prompt.format(tool_descriptions=tool_descriptions)
         super().__init__(
             dataset=dataset,
@@ -114,9 +38,26 @@ class ToolEnv(MultiTurnEnv):
         )
         self.dataset_name = dataset
         self.max_steps = max_steps
-        self.llm_parser = XMLParser(fields=llm_fields)
-        self.env_parser = XMLParser(fields=env_fields)
-        self.rubric = ToolRubric(tools=tools, parser=self.llm_parser, env_parser=self.env_parser)
+        self.tools = {tool.name: tool for tool in tools}
+        self.rubric = SmolaToolRubric(tools=tools)
+        self.llm_parser = SmolaParser(fields=["reasoning", ("tool", "answer")])
+        self.env_parser = SmolaParser(fields=["result"])
+
+    def _format_tool_descriptions(self, tools: List[Any]) -> str:
+        """Formats tool schemas into a user-friendly description string."""
+        descriptions = []
+        for tool in tools:
+            desc = [f"{tool.name}: {tool.description}"]
+            
+            desc.append("\nArguments:")
+            for arg_name, arg_info in tool.inputs.items():
+                desc.append(f"  - {arg_name}: {arg_info['description']}")
+            
+            desc.append(f"\nReturns: {tool.output_type}")
+            
+            descriptions.append("\n".join(desc))
+        
+        return "\n\n".join(descriptions)
 
     def get_reward_funcs(self, **kwargs: Any) -> List[RewardFunc]:
         return self.rubric.get_reward_funcs()
@@ -156,7 +97,7 @@ class ToolEnv(MultiTurnEnv):
             return False
 
     def call_tool(self, tool_json: str, **kwargs: Any) -> str:
-        """Call a tool based on JSON command."""
+        """Call a SmolaAgents Tool object based on JSON command."""
         try:
             command = json.loads(tool_json)
             if not isinstance(command, dict):
@@ -167,16 +108,15 @@ class ToolEnv(MultiTurnEnv):
                 return "Error: Tool command must specify 'name', e.g. '{\"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\", \"arg2\": \"value2\"}}'"
             
             if tool_name not in self.tools:
-                return f"Error: Unknown tool '{tool_name}. " + "Please format your tool call as '{\"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\", \"arg2\": \"value2\"}}'"
+                return f"Error: Unknown tool '{tool_name}'. " + "Please format your tool call as '{\"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\", \"arg2\": \"value2\"}}'"
             
-            tool_func = self.tools[tool_name]
+            tool = self.tools[tool_name]
             tool_args = command.get("args", {})
             if isinstance(tool_args, str):
-                tool_schema = next((schema['args'] for schema in self.tool_schemas if schema['name'] == tool_name), None)
-                return f"Error: Arguments for {tool_name} must be a JSON object with schema {tool_schema}, not a string." 
+                return f"Error: Arguments for {tool_name} must be a JSON object matching the tool's input schema, not a string." 
             
-            # Call the tool function with arguments
-            result = tool_func(**tool_args)
+            # Call the tool object with arguments
+            result = tool(**tool_args)
             return str(result)
         except json.JSONDecodeError:
             return "Error: Invalid JSON format. Please format your tool call as '{\"name\": \"tool_name\", \"args\": {\"arg1\": \"value1\", \"arg2\": \"value2\"}}'"

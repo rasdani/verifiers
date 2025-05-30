@@ -1,18 +1,18 @@
 import json
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Any
 
-from verifiers.parsers import XMLParser
+from verifiers.parsers.smola_parser import SmolaParser
 from verifiers.rubrics import Rubric
 from verifiers.rubrics.math_grader import grade
 
-class ToolRubric(Rubric):
+class SmolaToolRubric(Rubric):
     def __init__(self,
-                 parser: XMLParser = XMLParser(fields=["reasoning", ("tool", "answer")]),
-                 env_parser: XMLParser = XMLParser(fields=["result"]),
-                 tools: List[Callable] = []):
+                 parser: SmolaParser = SmolaParser(fields=["reasoning", ("tool", "answer")]),
+                 env_parser: SmolaParser = SmolaParser(fields=["result"]),
+                 tools: List[Any] = []):
         self.parser = parser
         self.env_parser = env_parser
-        self.tools = {tool.__name__: tool for tool in tools}
+        self.tools = {tool.name: tool for tool in tools}
         self.reward_funcs = [
             self.mc_reward_func,
             self.math_reward_func,
@@ -167,7 +167,7 @@ class ToolRubric(Rubric):
         """
         Reward function that checks tool execution success.
 
-        Uses XMLParser to identify proper tool calls.
+        Uses SmolaParser to identify proper tool calls.
         """
         def check_execution(trajectory):
             tool_attempts = 0
@@ -204,13 +204,13 @@ class ToolRubric(Rubric):
         """
         Returns a reward function that checks tool execution success for a specific tool.
 
-        Uses XMLParser to identify proper tool calls.
+        Uses SmolaParser to identify proper tool calls.
         """
         def tool_reward_func(completions: List[List[Dict[str, str]]], **kwargs) -> List[float]:
             """
             Reward function that checks execution success for the {tool_name} tool.
             
-            Uses XMLParser to identify proper tool calls for the specified tool.
+            Uses SmolaParser to identify proper tool calls for the specified tool.
             """
             import json
             

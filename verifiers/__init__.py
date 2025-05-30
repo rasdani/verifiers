@@ -1,7 +1,11 @@
+from typing import Callable, Union
+from transformers import PreTrainedModel 
+RewardFunc = Union[str, PreTrainedModel, Callable[[list, list], list[float]]]
+
 from .envs.environment import Environment
 from .envs.code_env import CodeEnv
 from .envs.doublecheck_env import DoubleCheckEnv
-from .envs.math_env import MathEnv
+from .envs.singleturn_env import SingleTurnEnv
 from .envs.simple_env import SimpleEnv
 from .envs.tool_env import ToolEnv
 from .trainers.grpo_env_trainer import GRPOEnvTrainer
@@ -20,7 +24,7 @@ __all__ = [
     "Environment",
     "CodeEnv",
     "DoubleCheckEnv",
-    "MathEnv",
+    "SingleTurnEnv",
     "SimpleEnv",
     "ToolEnv",
     "GRPOEnvTrainer",

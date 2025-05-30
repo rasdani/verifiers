@@ -1,8 +1,9 @@
 import re
+import json
 from typing import List, Dict, Any, Union, Tuple, Optional, Callable
 from types import SimpleNamespace
 
-class XMLParser:
+class SmolaParser:
     def __init__(self, fields: List[Union[str, Tuple[str, ...]]]):
         """
         Initialize the parser with field definitions.
@@ -208,7 +209,7 @@ class XMLParser:
         allowed names (preferring the canonical if present).
         
         Example usage:
-            parser = XMLParser(['reasoning', ('code', 'answer')])
+            parser = SmolaParser(['reasoning', ('code', 'answer')])
             formatted_str = parser.format(reasoning="...", code="...")
         """
         parts = []
@@ -242,6 +243,8 @@ class XMLParser:
             if the schema is ['reasoning', ('code', 'answer')], then both
             `result.code` and `result.answer` are always accessible. If a tag is not
             found in the XML, its corresponding attribute is set to None.
+            
+        This implementation also attempts to parse tool JSON content when available.
         """
         results: Dict[str, Optional[str]] = {}
         for canonical, alternatives in self._fields:
@@ -251,7 +254,15 @@ class XMLParser:
                 pattern = rf"<{alt}>\s*(.*?)\s*</{alt}>"
                 match = re.search(pattern, text, re.DOTALL)
                 if match:
-                    results[alt] = match.group(1).strip() if strip else match.group(1)
+                    content = match.group(1).strip() if strip else match.group(1)
+                    # If the field contains valid JSON and it's a tool field, parse it
+                    if alt == 'tool' and content:
+                        try:
+                            # Try to parse as JSON but preserve the string for the result
+                            json.loads(content)
+                        except json.JSONDecodeError:
+                            pass
+                    results[alt] = content
                 else:
                     results[alt] = None
         return SimpleNamespace(**results)

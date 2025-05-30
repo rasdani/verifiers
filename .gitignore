@@ -6,6 +6,7 @@ env/
 .env.local
 uv.lock
 CLAUDE.md
+.cursorrules
 
 # artifacts
 dist/
@@ -26,8 +27,12 @@ logs/
 .vscode/
 *.swp
 .DS_Store
-
+verifiers/envs/wordle_env.py
+verifiers/envs/textarena_env.py
 
 # WIPs
 wip/
+old/
+tests/
+scripts/
 notebooks/
