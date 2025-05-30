@@ -44,7 +44,8 @@ RUN uv venv -p python3.11 /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy project files first to use requirements
-COPY --exclude=outputs/ . /workspace/verifiers/
+# COPY --exclude=outputs/ . /workspace/verifiers/
+COPY . /workspace/verifiers/
 WORKDIR /workspace/verifiers
 
 # Install dependencies using uv as per provided commands
