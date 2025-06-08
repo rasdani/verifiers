@@ -52,6 +52,35 @@ class CountdownRubric(Rubric):
         except:
             return None
 
+    def format_reward_func(self, completions, answer, **kwargs) -> List[float]:
+        """Reward function for formatting the answer."""
+        rewards = []
+        format_score = 0.1
+        for completion, ans in zip(completions, answer):
+            messages = self.get_assistant_messages(completion)
+            if not messages:
+                rewards.append(0.0)
+                continue
+                
+            solution = messages[-1]['content']
+            equation = self.extract_solution(solution)
+            
+            if equation is None:
+                rewards.append(0.0)
+                continue
+                
+            target = ans['target']
+            numbers = ans['numbers']
+            
+            if not self.validate_equation(equation, numbers):
+                rewards.append(format_score)
+                continue
+                
+            result = self.evaluate_equation(equation)
+            if result is None:
+                rewards.append(format_score)
+                continue
+    
     def countdown_reward_func(self, completions, answer, **kwargs) -> List[float]:
         """Reward function for countdown arithmetic problems."""
         format_score = 0.1
