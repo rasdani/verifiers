@@ -49,11 +49,14 @@ COPY . /workspace/verifiers/
 WORKDIR /workspace/verifiers
 
 # Install dependencies using uv as per provided commands
-RUN uv pip install setuptools psutil && \
-    uv pip install torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
-    uv pip install -e . --no-build-isolation && \
-    uv pip install flash_attn --no-build-isolation && \
-    uv pip install wandb
+# RUN uv pip install setuptools psutil && \
+#     uv pip install torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
+#     uv pip install -e . --no-build-isolation && \
+#     uv pip install flash_attn --no-build-isolation && \
+#     uv pip install wandb
+
+RUN uv sync && uv pip install flash-attn --no-build-isolation && uv pip install -e ".[all]"
+
 
 # Create cache directory for huggingface
 RUN mkdir -p /root/.cache/huggingface
