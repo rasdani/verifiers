@@ -308,7 +308,7 @@ def argmax_reward_func(
 model_name = 'willcb/Qwen3-0.6B'
 # model_name = 'willcb/Qwen3-1.7B'
 
-dataset = get_skywork_dataset('skywork_train.csv', split='train').select(range(100))
+dataset = get_skywork_dataset('skywork_train.csv', split='train')
 # breakpoint()
 dataset = dataset.map(lambda x: {'question': x['prompt'], 'answer': x['chosen_positions']})
 # breakpoint()
@@ -345,17 +345,18 @@ args.per_device_train_batch_size = 4
 args.num_generations = 8
 args.max_prompt_length = 4096
 # args.max_prompt_length = 2048
-args.gradient_accumulation_steps = 4
+# args.gradient_accumulation_steps = 4
 # args.gradient_accumulation_steps = 16
-# args.gradient_accumulation_steps = 64
+args.gradient_accumulation_steps = 64
 args.eval_strategy = "steps"
 # args.eval_steps = 10
 # args.eval_steps = 2
 args.eval_steps = 10
 # args.max_steps = 100
 # args.max_steps = 10
-# args.num_train_epochs = 10
-args.num_train_epochs = 8
+args.max_steps = None
+args.num_train_epochs = 10
+# args.num_train_epochs = 8
 # args.log_completions = False
 
 model, tokenizer = vf.get_model_and_tokenizer(model_name)
