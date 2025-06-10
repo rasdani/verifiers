@@ -27,7 +27,7 @@ dependencies = [
     "peft",
     "wandb",
     "rich",
-    "trl>=0.17.0",
+    "trl>=0.17.1",
     "requests>=2.32.3",
     "openai>=1.81.0",
     "datasets>=3.6.0",

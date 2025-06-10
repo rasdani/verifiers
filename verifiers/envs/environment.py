@@ -117,6 +117,8 @@ class Environment(ABC):
             return messages
         
         if answer_key == "answer":
+            # breakpoint()
+            return dataset
             return dataset.map(lambda x: {
                 "prompt": format_prompt_fn(x[question_key]),
             }, num_proc=min(self.max_concurrent, 32))
