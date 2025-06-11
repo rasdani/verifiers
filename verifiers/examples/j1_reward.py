@@ -1,27 +1,22 @@
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 import verifiers as vf
 import re
 import os
 import pandas as pd
 import textwrap
-from datasets import Dataset, load_dataset
 from random import random
 from typing import List
 
 """
 inference:
-CUDA_VISIBLE_DEVICES=0 vf-vllm --model willcb/Qwen2.5-0.5B-Reverse-SFT
+CUDA_VISIBLE_DEVICES=0 uv run vf-vllm --model willcb/Qwen3-0.6B
 
 training:
-CUDA_VISIBLE_DEVICES=1 accelerate launch --num-processes 1 --config-file configs/zero3.yaml verifiers/examples/reverse_text.py
+CUDA_VISIBLE_DEVICES=1 uv run accelerate launch --num-processes 1 --config-file configs/deepspeed/zero3.yaml verifiers/examples/j1_reward.py
 """
 
 
 parser = vf.XMLParser(['think', 'answer'], answer_field='answer')
-# system_prompt = f"""Fix the issue in the code.
-
-# Respond in the following format:
-# {parser.get_format_str()}"""
 
 def judge_system_prompt() -> str:
     return textwrap.dedent(
@@ -287,8 +282,6 @@ def argmax_reward_func(
     """
     # breakpoint()
     # Hardcoded config values
-    CHOSEN_POSITION_A = "a"
-    CHOSEN_POSITION_B = "b"
     
     raw_response = completion[0]["content"]
     try:
@@ -297,8 +290,8 @@ def argmax_reward_func(
         return 0.0
     else:
         position_to_score = {
-            CHOSEN_POSITION_A: lambda scores: scores[0] > scores[1],
-            CHOSEN_POSITION_B: lambda scores: scores[1] > scores[0],
+            "a": lambda scores: scores[0] > scores[1],
+            "b": lambda scores: scores[1] > scores[0],
         }
         if answer not in position_to_score:
             raise ValueError(f"Invalid chosen position: {answer}")
@@ -311,6 +304,7 @@ model_name = 'willcb/Qwen3-0.6B'
 dataset = get_skywork_dataset('skywork_train.csv', split='train')
 # breakpoint()
 dataset = dataset.map(lambda x: {'question': x['prompt'], 'answer': x['chosen_positions']})
+dataset = dataset.shuffle(seed=42)
 # breakpoint()
 
 # evaluate on the first 32 examples, train on the rest
@@ -318,10 +312,6 @@ eval_dataset = dataset.select(range(len(dataset)-32, len(dataset))) # type: igno
 train_dataset = dataset.select(range(0, len(dataset)-32)) # type: ignore
 
 
-# rubric = vf.Rubric(funcs=[
-# 	lcs_reward_func,
-# 	parser.get_format_reward_func(),
-# ], weights=[1.0, 0.2])
 rubric = vf.Rubric(funcs=[
 	argmax_reward_func,
 ], weights=[1.0])
@@ -343,6 +333,7 @@ args.per_device_train_batch_size = 4
 # args.num_generations = 10
 # args.num_generations = 2
 args.num_generations = 8
+# args.num_generations = 4
 args.max_prompt_length = 4096
 # args.max_prompt_length = 2048
 # args.gradient_accumulation_steps = 4
@@ -354,8 +345,8 @@ args.eval_strategy = "steps"
 args.eval_steps = 10
 # args.max_steps = 100
 # args.max_steps = 10
-args.max_steps = None
-args.num_train_epochs = 10
+args.max_steps = -1
+args.num_train_epochs = 1
 # args.num_train_epochs = 8
 # args.log_completions = False
 
@@ -364,7 +355,6 @@ trainer = vf.GRPOTrainer(
     model=model,
     processing_class=tokenizer,
     env=vf_env,
-    #peft_config=vf.lora_defaults(),
     args=args
 )
 trainer.train()
