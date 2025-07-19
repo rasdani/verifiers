@@ -27,6 +27,7 @@ from .rubrics.rubric import Rubric
 from .rubrics.judge_rubric import JudgeRubric
 from .rubrics.rubric_group import RubricGroup
 from .rubrics.tool_rubric import ToolRubric
+from .rubrics.swe_rl_rubric import swe_rl_reward_func
 
 from .envs.environment import Environment
 from .envs.multiturn_env import MultiTurnEnv
@@ -86,6 +87,7 @@ __all__ = [
     "JudgeRubric",
     "RubricGroup",
     "ToolRubric",
+    "swe_rl_reward_func",
     "Environment",
     "MultiTurnEnv",
     "SingleTurnEnv",

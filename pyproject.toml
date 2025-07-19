@@ -24,6 +24,9 @@ classifiers = [
 dependencies = [
     "openai",
     "datasets",
+    "cydifflib>=1.2.0",
+    "unidiff>=0.7.5",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
