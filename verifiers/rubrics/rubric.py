@@ -3,7 +3,8 @@ import inspect
 import logging
 from typing import Dict, List, Union
 
-from verifiers import ChatMessage, Info, Parser, RewardFunc, State
+from verifiers.types import ChatMessage, Info, RewardFunc, State
+from verifiers.parsers.parser import Parser
 
 
 class Rubric:

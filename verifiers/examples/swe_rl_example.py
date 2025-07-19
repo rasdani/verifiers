@@ -1,54 +1,38 @@
 from datasets import load_dataset
 import verifiers as vf
+from verifiers.parsers.swe_rl_parser import SweRlParser
+from verifiers.rubrics.swe_rl_rubric import SweRlRubric
 
 """
 inference:
-CUDA_VISIBLE_DEVICES=0 vf-vllm --model willcb/Qwen2.5-0.5B-Reverse-SFT --enforce-eager
+CUDA_VISIBLE_DEVICES=0 vf-vllm --model willcb/Qwen3-0.6B --enforce-eager
+# CUDA_VISIBLE_DEVICES=0 vf-vllm --model deepseek-ai/DeepSeek-R1-Distill-Llama-8B --enforce-eager
 
 training:
-CUDA_VISIBLE_DEVICES=1 accelerate launch --num-processes 1 --config-file configs/zero3.yaml verifiers/examples/reverse_text.py
+CUDA_VISIBLE_DEVICES=1 accelerate launch --num-processes 1 --config-file configs/zero3.yaml verifiers/examples/swe_rl_example.py
 """
 
 
-model_name = 'deepseek-ai/DeepSeek-R1-Distill-Llama-8B'
+# model_name = 'deepseek-ai/DeepSeek-R1-Distill-Llama-8B'
+model_name = 'willcb/Qwen3-0.6B'
 dataset = load_dataset('rasdani/SkyRL-v0-293-data-oracle-8k-context', split='train').map(lambda x: {'question': x['text'], 'answer': x['text'][::-1]})
 TRAIN_SIZE = 100
 EVAL_SIZE = 10
 train_dataset = dataset.select(range(TRAIN_SIZE)) # type: ignore
 eval_dataset = dataset.select(range(TRAIN_SIZE, TRAIN_SIZE + EVAL_SIZE)) # type: ignore
 
-parser = vf.XMLParser(['think', 'answer'], answer_field='answer')
-system_prompt = f"""Reverse the given text.
+# parser = vf.XMLParser(['think', 'answer'], answer_field='answer')
+parser = SweRlParser()
 
-Respond in the following format:
-{parser.get_format_str()}"""
-
-def lcs_reward_func(completion, answer, **kwargs) -> float:
-    """
-    LCS ratio of the reversed prompt and the parsed completion.
-    """
-    def lcs_ratio(x: str, y: str) -> float:
-        """
-        Return the longest common subsequence ratio of x and y.
-        """
-        from difflib import SequenceMatcher
-        return SequenceMatcher(None, x, y).ratio()
-    response = parser.parse_answer(completion) or ''
-    return lcs_ratio(response, answer)
-
-rubric = vf.Rubric(funcs=[
-	lcs_reward_func,
-	parser.get_format_reward_func(),
-], weights=[1.0, 0.2])
+rubric = SweRlRubric(parser=parser)
 
 vf_env = vf.SingleTurnEnv(
     dataset=train_dataset, # type: ignore
     eval_dataset=eval_dataset, # type: ignore
-    system_prompt=system_prompt,
     parser=parser,
     rubric=rubric
 )
-args = vf.grpo_defaults(run_name='reverse_text_warmup')
+args = vf.grpo_defaults(run_name='swe_rl_example')
 args.per_device_train_batch_size = 12
 args.num_generations = 12
 args.gradient_accumulation_steps = 8
