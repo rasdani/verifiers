@@ -717,6 +717,7 @@ Model copies with swapped templates are available here: https://huggingface.co/c
         """
         # Determine format from first prompt
         is_chat_format = isinstance(prompts[0], list)
+        # breakpoint()
         assert is_chat_format, (
             "vLLM output parsing is not yet supported for completion format"
         )

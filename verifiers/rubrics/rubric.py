@@ -72,6 +72,7 @@ class Rubric:
             ...
         ``
         """
+        # breakpoint()
         sig = inspect.signature(func)
 
         common = dict(

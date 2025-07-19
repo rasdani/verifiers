@@ -1,4 +1,4 @@
-from typing import List, Callable, Dict, Tuple
+from typing import List, Callable, Dict, Tuple, Union
 import re
 from collections import defaultdict
 
@@ -41,7 +41,9 @@ class SweRlParser(Parser):
         return self.parse_edits(text)
 
     def get_format_reward_func(self) -> Callable:
-        def format_reward_func(completion: List[ChatMessage], **kwargs) -> float:
+        def format_reward_func(completion: Union[str, List[ChatMessage]], **kwargs) -> float:
+            if isinstance(completion, str):
+                completion = [{"role": "assistant", "content": completion}]
             messages = self.get_assistant_messages(completion)
             scores = []
             for msg in messages:

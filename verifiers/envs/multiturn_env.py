@@ -65,6 +65,7 @@ class MultiTurnEnv(Environment):
             'responses': []
         }
         if self.message_type == 'chat':
+            # breakpoint()
             assert isinstance(prompt, list)
             completion = []
         else:
@@ -98,6 +99,7 @@ class MultiTurnEnv(Environment):
             else:
                 assert isinstance(rollout, str)
                 assert isinstance(completion, str)
+                # breakpoint()
                 assert isinstance(response, Completion)
                 response_text: str = response.choices[0].text or ""
                 rollout += response_text
