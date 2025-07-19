@@ -1,121 +1,67 @@
+from datasets import load_dataset
+import verifiers as vf
+
 """
-Example usage of the SWE-RL reward system for scoring code edits and patches.
+inference:
+CUDA_VISIBLE_DEVICES=0 vf-vllm --model willcb/Qwen2.5-0.5B-Reverse-SFT --enforce-eager
 
-This example demonstrates how to use the ported SWE-RL reward function
-to score code changes against ground truth patches.
-"""
-
-import json
-from verifiers import swe_rl_reward_func, Rubric
-from verifiers.rubrics.swe_rl_utils import FileDiff, FileInfo, FileDiffHeader
-
-
-def create_example_file_diff():
-    """Create an example FileDiff for testing."""
-    header = FileDiffHeader(
-        file=FileInfo(path="example.py"),
-        misc_line=None
-    )
-    
-    file_diff = FileDiff(
-        old_file_content="""def hello_world():
-    print("Hello world")
-    return "Hello"
-""",
-        new_file_content="""def hello_world():
-    print("Hello, World!")
-    return "Hello, World!"
-""",
-        header=header
-    )
-    
-    return file_diff
-
-
-def main():
-    """Demonstrate SWE-RL reward function usage."""
-    
-    # Create example data
-    file_diff = create_example_file_diff()
-    
-    # Example completion with SEARCH/REPLACE format
-    completion = '''
-<think>
-I need to update the hello_world function to be more professional.
-</think>
-
-I'll update the function to use proper punctuation and consistent messaging:
-
-```python
-### example.py
-<<<<<<< SEARCH
-def hello_world():
-    print("Hello world")
-    return "Hello"
-=======
-def hello_world():
-    print("Hello, World!")
-    return "Hello, World!"
->>>>>>> REPLACE
-```
-'''
-
-    # Ground truth oracle patch
-    oracle_patch = """--- a/example.py
-+++ b/example.py
-@@ -1,3 +1,3 @@
- def hello_world():
--    print("Hello world")
--    return "Hello"
-+    print("Hello, World!")
-+    return "Hello, World!"
+training:
+CUDA_VISIBLE_DEVICES=1 accelerate launch --num-processes 1 --config-file configs/zero3.yaml verifiers/examples/reverse_text.py
 """
 
-    # Create file context
-    file_context = {
-        "example.py": file_diff.old_file_content
-    }
 
-    # Create extra info with file diffs and context
-    parsed_commit_content = {
-        "file_diffs": [file_diff.dict()]
-    }
-    
-    extra_info = {
-        "parsed_commit_content": json.dumps(parsed_commit_content),
-        "file_context": json.dumps(file_context)
-    }
+model_name = 'deepseek-ai/DeepSeek-R1-Distill-Llama-8B'
+dataset = load_dataset('rasdani/SkyRL-v0-293-data-oracle-8k-context', split='train').map(lambda x: {'question': x['text'], 'answer': x['text'][::-1]})
+TRAIN_SIZE = 100
+EVAL_SIZE = 10
+train_dataset = dataset.select(range(TRAIN_SIZE)) # type: ignore
+eval_dataset = dataset.select(range(TRAIN_SIZE, TRAIN_SIZE + EVAL_SIZE)) # type: ignore
 
-    # Test the reward function directly
-    score = swe_rl_reward_func(
-        completion=completion,
-        answer=oracle_patch,
-        info=extra_info
-    )
-    
-    print(f"SWE-RL Score: {score:.4f}")
+parser = vf.XMLParser(['think', 'answer'], answer_field='answer')
+system_prompt = f"""Reverse the given text.
 
-    # Test using Rubric system
-    rubric = Rubric(
-        funcs=[swe_rl_reward_func],
-        weights=[1.0]
-    )
-    
-    # Note: This would typically be used in an async context
-    # scores = await rubric.score_rollout(
-    #     prompt="Fix the hello_world function",
-    #     completion=completion,
-    #     answer=oracle_patch,
-    #     state={},
-    #     info=extra_info
-    # )
-    
-    print(f"Successfully integrated SWE-RL reward system!")
-    print(f"- Created FileDiff utilities for patch handling")
-    print(f"- Implemented SEARCH/REPLACE edit parsing")
-    print(f"- Added patch similarity scoring using cydifflib")
-    print(f"- Integrated with verifiers Rubric system")
+Respond in the following format:
+{parser.get_format_str()}"""
 
+def lcs_reward_func(completion, answer, **kwargs) -> float:
+    """
+    LCS ratio of the reversed prompt and the parsed completion.
+    """
+    def lcs_ratio(x: str, y: str) -> float:
+        """
+        Return the longest common subsequence ratio of x and y.
+        """
+        from difflib import SequenceMatcher
+        return SequenceMatcher(None, x, y).ratio()
+    response = parser.parse_answer(completion) or ''
+    return lcs_ratio(response, answer)
 
-if __name__ == "__main__":
-    main()
+rubric = vf.Rubric(funcs=[
+	lcs_reward_func,
+	parser.get_format_reward_func(),
+], weights=[1.0, 0.2])
+
+vf_env = vf.SingleTurnEnv(
+    dataset=train_dataset, # type: ignore
+    eval_dataset=eval_dataset, # type: ignore
+    system_prompt=system_prompt,
+    parser=parser,
+    rubric=rubric
+)
+args = vf.grpo_defaults(run_name='reverse_text_warmup')
+args.per_device_train_batch_size = 12
+args.num_generations = 12
+args.gradient_accumulation_steps = 8
+args.max_steps = 100
+args.eval_strategy = 'steps'
+args.eval_steps = 2
+
+model, tokenizer = vf.get_model_and_tokenizer(model_name)
+trainer = vf.GRPOTrainer(
+    model=model,
+    processing_class=tokenizer,
+    env=vf_env,
+    #peft_config=vf.lora_defaults(),
+    args=args,
+)
+trainer.train()
