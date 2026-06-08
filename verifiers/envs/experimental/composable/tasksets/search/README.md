@@ -9,6 +9,7 @@ The search family is intentionally backend-oriented, mirroring the SWE taskset p
 | Backend | Source | Default dataset | Status |
 |---|---|---|---|
 | `quest` | [OSU-NLP-Group/QUEST](https://github.com/OSU-NLP-Group/QUEST) | [`osunlp/QUEST-RL-Data`](https://huggingface.co/datasets/osunlp/QUEST-RL-Data) | Objective tasks supported |
+| `redsearcher` | [RedSearchAgent/REDSearcher](https://github.com/RedSearchAgent/REDSearcher) | [`Zchu/REDSearcher_RL_1K`](https://huggingface.co/datasets/Zchu/REDSearcher_RL_1K) | Text RL query set supported |
 
 ## Usage
 
@@ -16,13 +17,14 @@ The search family is intentionally backend-oriented, mirroring the SWE taskset p
 from verifiers.envs.experimental.composable.tasksets.search import make_search_taskset
 
 taskset = make_search_taskset(backend="quest", category="objective")
+redsearcher = make_search_taskset(backend="redsearcher", difficulty="easy")
 ```
 
 `make_search_taskset()` dispatches by backend name. Unknown backends raise `ValueError` with the available backend list.
 
 ## Output Contract
 
-Search tasksets should define their own output contract. The initial `quest` backend expects the agent to write one final researched response to `/task/answer.txt`, including supporting URLs/citations when available. Scratch reasoning, tool traces, and logs should not be written as the final answer.
+Search tasksets should define their own output contract. The `quest` and `redsearcher` backends expect the agent to write one final researched response to `/task/answer.txt`, including supporting URLs/citations when available. Scratch reasoning, tool traces, and logs should not be written as the final answer.
 
 ## Error Handling
 
